@@ -1,0 +1,15 @@
+Package: convexpi
+Title: ConvexPi Lab Client for R
+Version: 0.1.0
+Authors@R: person("ConvexPi", role = c("aut", "cre"), email = "team@convexpi.ai")
+Description: Write quantitative trading strategies in R and submit them to the ConvexPi
+    hidden-holdout grader. Provides access to the same synthetic equity market the grader
+    uses (via the published Python 'convexpi-lab' through 'reticulate') and a helper to
+    submit an R strategy. Strategies are defined as on_day() and scored by the same engine
+    as Python and Julia, so the same idea earns the same out-of-sample result in any language.
+License: MIT + file LICENSE
+URL: https://www.convexpi.ai
+BugReports: https://github.com/convexpi/convexpi-r/issues
+Encoding: UTF-8
+Imports: reticulate, httr, jsonlite
+RoxygenNote: 7.3.1

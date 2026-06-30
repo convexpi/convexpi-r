@@ -1,0 +1,5 @@
+export(synthetic_market)
+export(submit)
+importFrom(httr, POST, add_headers, content, status_code)
+importFrom(jsonlite, toJSON)
+importFrom(reticulate, import)
