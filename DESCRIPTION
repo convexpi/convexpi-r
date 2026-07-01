@@ -12,4 +12,5 @@ URL: https://www.convexpi.ai
 BugReports: https://github.com/convexpi/convexpi-r/issues
 Encoding: UTF-8
 Imports: reticulate, httr, jsonlite
+Suggests: websocket, later
 RoxygenNote: 7.3.1
