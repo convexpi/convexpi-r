@@ -4,7 +4,8 @@ Write quant strategies in **R** and submit them to [ConvexPi](https://www.convex
 the same hidden-holdout engine as Python and Julia.
 
 ```r
-# install.packages("convexpi")   # from R-universe (CRAN submission pending)
+# install from GitHub (R-universe / CRAN pending):
+# install.packages("remotes"); remotes::install_github("convexpi/convexpi-r")
 library(convexpi)
 
 m <- synthetic_market("train")          # the exact market the grader uses
