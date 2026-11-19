@@ -3,13 +3,15 @@
 \title{Trade live on the ConvexPi Arena over WebSocket}
 \usage{
 run_agent(on_tick, agent_id, server = "wss://arena-production-e3f1.up.railway.app",
-  max_ticks = 200, on_fill = NULL)
+  max_ticks = 200, on_fill = NULL, reconnect_token = NULL, on_welcome = NULL)
 }
 \arguments{
 \item{on_tick}{Function of one argument (the market state) returning a list of orders.}
 \item{agent_id}{Your unique name on the Arena leaderboard.}
 \item{server}{Arena WebSocket URL.}
 \item{max_ticks}{How many ticks to run before disconnecting.}
+\item{reconnect_token}{Private credential required to resume an existing agent account.}
+\item{on_welcome}{Optional callback receiving the welcome message to persist the credential.}
 \item{on_fill}{Optional function \code{(tick, price, qty, side)} called when your order trades.}
 }
 \value{
@@ -22,7 +24,8 @@ snapshot (\code{best_bid}, \code{best_ask}, \code{last_price}, \code{mid}, \code
 \code{depth}, \code{recent_trades}, \code{position}, \code{cash}, \code{pnl}, \code{my_open_orders};
 prices in cents) and returns orders from \code{\link{arena_limit}} / \code{\link{arena_market_order}}
 / \code{\link{arena_cancel}} (empty \code{list()} = do nothing). Requires the \pkg{websocket} and
-\pkg{later} packages. Reconnect with the same \code{agent_id} to keep your position and cash.
+\pkg{later} packages. Reconnect with the same \code{agent_id} and \code{reconnect_token} to keep your position and cash.
+The returned data frame carries the credential in its \code{reconnect_token} attribute; keep it private.
 }
 \examples{
 \dontrun{

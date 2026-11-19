@@ -7,6 +7,8 @@ ARENA_DEFAULT_SERVER <- "wss://arena-production-e3f1.up.railway.app"
 #' @param side "buy" or "sell".
 #' @param price Limit price in integer cents.
 #' @param qty Quantity (shares).
+#' @param reconnect_token Private credential from a previous welcome; required to resume an account.
+#' @param on_welcome Optional callback to persist the welcome credential securely.
 #' @return A list describing the order, for return from \code{on_tick}.
 #' @export
 arena_limit <- function(side, price, qty) {
@@ -16,6 +18,8 @@ arena_limit <- function(side, price, qty) {
 #' Build an Arena market order (takes the best available price immediately).
 #' @param side "buy" or "sell".
 #' @param qty Quantity (shares).
+#' @param reconnect_token Private credential from a previous welcome; required to resume an account.
+#' @param on_welcome Optional callback to persist the welcome credential securely.
 #' @return A list describing the order.
 #' @export
 arena_market_order <- function(side, qty) {
@@ -24,6 +28,8 @@ arena_market_order <- function(side, qty) {
 
 #' Cancel a resting Arena order by id (from \code{state$my_open_orders}).
 #' @param order_id The resting order's id.
+#' @param reconnect_token Private credential from a previous welcome; required to resume an account.
+#' @param on_welcome Optional callback to persist the welcome credential securely.
 #' @return A list describing the cancel.
 #' @export
 arena_cancel <- function(order_id) {
@@ -37,7 +43,7 @@ arena_cancel <- function(order_id) {
 #' \code{spread}, \code{depth}, \code{recent_trades}, \code{position}, \code{cash}, \code{pnl},
 #' \code{my_open_orders}; all prices in cents) and returns a list of orders built with
 #' \code{\link{arena_limit}}, \code{\link{arena_market_order}}, \code{\link{arena_cancel}} (an empty
-#' \code{list()} = do nothing). Reconnect with the same \code{agent_id} to keep your position/cash.
+#' \code{list()} = do nothing). Reconnect with the same \code{agent_id} and \code{reconnect_token} to keep your position/cash.
 #'
 #' Requires the \code{websocket} and \code{later} packages.
 #'
@@ -46,11 +52,13 @@ arena_cancel <- function(order_id) {
 #' @param server Arena WebSocket URL.
 #' @param max_ticks How many ticks to run before disconnecting.
 #' @param on_fill Optional function \code{(tick, price, qty, side)} called when your order trades.
+#' @param reconnect_token Private credential from a previous welcome; required to resume an account.
+#' @param on_welcome Optional callback to persist the welcome credential securely.
 #' @return A data frame of per-tick telemetry: \code{tick}, \code{pnl} (dollars), \code{position},
 #'   \code{mid} (dollars), \code{last_price} (dollars).
 #' @export
 run_agent <- function(on_tick, agent_id, server = ARENA_DEFAULT_SERVER,
-                      max_ticks = 200, on_fill = NULL) {
+                      max_ticks = 200, on_fill = NULL, reconnect_token = NULL, on_welcome = NULL) {
   for (pkg in c("websocket", "later")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
       stop(sprintf("run_agent() needs the '%s' package: install.packages('%s')", pkg, pkg))
@@ -60,11 +68,14 @@ run_agent <- function(on_tick, agent_id, server = ARENA_DEFAULT_SERVER,
   ws <- websocket::WebSocket$new(server, autoConnect = FALSE)
 
   ws$onOpen(function(event) {
-    ws$send(jsonlite::toJSON(list(type = "join", agent_id = agent_id), auto_unbox = TRUE))
+    ws$send(jsonlite::toJSON(list(type = "join", agent_id = agent_id, reconnect_token = reconnect_token), auto_unbox = TRUE))
   })
   ws$onMessage(function(event) {
     msg <- jsonlite::fromJSON(event$data, simplifyVector = FALSE)
-    if (identical(msg$type, "tick")) {
+    if (identical(msg$type, "welcome")) {
+      reconnect_token <<- msg$reconnect_token
+      if (!is.null(on_welcome)) on_welcome(msg)
+    } else if (identical(msg$type, "tick")) {
       bb <- msg$best_bid; ba <- msg$best_ask; lp <- msg$last_price
       mid    <- if (!is.null(bb) && !is.null(ba)) (bb + ba) / 2 else if (!is.null(lp)) as.numeric(lp) else NULL
       spread <- if (!is.null(bb) && !is.null(ba)) ba - bb else NULL
@@ -94,6 +105,7 @@ run_agent <- function(on_tick, agent_id, server = ARENA_DEFAULT_SERVER,
 
   ws$connect()
   while (!done) later::run_now(timeout = 0.25)
-  if (length(telem) == 0) return(data.frame())
-  do.call(rbind, telem)
+  result <- if (length(telem) == 0) data.frame() else do.call(rbind, telem)
+  attr(result, "reconnect_token") <- reconnect_token
+  result
 }
